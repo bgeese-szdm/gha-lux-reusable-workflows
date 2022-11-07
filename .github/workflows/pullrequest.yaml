@@ -1,0 +1,121 @@
+name: PR-Checks
+
+on:
+    workflow_call:
+        secrets:
+            NPM_TOKEN:
+                required: true
+
+jobs:
+    gather-information:
+        runs-on: ubuntu-latest
+        outputs:
+            graphql: ${{ steps.changes.outputs.graphql }}
+            yarn-scripts: ${{ steps.yarn-scripts.outputs.scripts }}
+        steps:
+            - uses: actions/checkout@v3
+            - name: List yarn scripts
+              id: yarn-scripts
+              run: echo "scripts=$(cat package.json| jq .scripts | jq 'keys' | jq 'join(", ")')" >> $GITHUB_OUTPUT
+            - uses: dorny/paths-filter@v2
+              id: changes
+              with:
+                  filters: |
+                      graphql:
+                        - '**.gql'
+                        - '**.graphql'
+
+    lint:
+        name: 💄 Lint
+        if: ${{ contains( needs.gather-information.outputs.yarn-scripts, 'lint') }}
+        runs-on: ubuntu-latest
+        needs: gather-information
+        permissions:
+            id-token: write
+            contents: write
+            pull-requests: write
+            statuses: write
+            checks: write
+        steps:
+            - uses: actions/checkout@v3
+            - uses: sueddeutsche/gha-npm-auth@v2
+              with:
+                  npm-token: ${{ secrets.NPM_TOKEN }}
+            - name: Use Node.js 14
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 14
+                  cache: yarn
+            - name: Install dependencies
+              run: yarn install --frozen-lockfile
+            - name: Lint source-code
+              run: yarn lint
+
+    dist:
+        name: 📦 Dist
+        if: ${{ contains( needs.gather-information.outputs.yarn-scripts, 'dist') }}
+        runs-on: ubuntu-latest
+        needs: gather-information
+        permissions:
+            id-token: write
+            contents: write
+            pull-requests: write
+            statuses: write
+            checks: write
+        steps:
+            - uses: actions/checkout@v3
+            - uses: sueddeutsche/gha-npm-auth@v2
+              with:
+                  npm-token: ${{ secrets.NPM_TOKEN }}
+            - name: Use Node.js 14
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 14
+                  cache: yarn
+            - name: Install dependencies
+              run: yarn install --frozen-lockfile
+            - name: Build a dist package
+              if: ${{ contains( needs.gather-information.outputs.yarn-scripts, 'dist') }}
+              run: yarn dist
+
+    test:
+        name: 🧪 Test
+        if: ${{ contains( needs.gather-information.outputs.yarn-scripts, 'test') }}
+        runs-on: ubuntu-latest
+        needs: gather-information
+        # needed in order to comment the pullrequest with failing test annotations etc.
+        permissions:
+            id-token: write
+            contents: write
+            pull-requests: write
+            statuses: write
+            checks: write
+        steps:
+            - uses: actions/checkout@v3
+            - uses: sueddeutsche/gha-npm-auth@v2
+              with:
+                  npm-token: ${{ secrets.NPM_TOKEN }}
+            - name: Use Node.js 14
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 14
+                  cache: yarn
+            - name: Install dependencies
+              run: yarn install --frozen-lockfile
+            - name: Run Tests
+              if: ${{ contains( needs.gather-information.outputs.yarn-scripts, 'test') }}
+              # use github-actions-reporter for jest in order to have a full pr-experience
+              run: yarn test
+
+    graphql-schema-validation:
+        name: GraphQL-Schema validation
+        if: ${{ needs.gather-information.outputs.graphql == 'true' }}
+        runs-on: ubuntu-latest
+        needs: gather-information
+        steps:
+            - name: Checkout
+              uses: actions/checkout@master
+            - uses: kamilkisiela/graphql-inspector@master
+              with:
+                  name: Validate GraphQL Api Schema
+                  schema: "main:src/graphql/schema.graphql"
