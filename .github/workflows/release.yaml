@@ -14,14 +14,13 @@ jobs:
               with:
                   fetch-depth: 0
                   persist-credentials: false
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 14
+                  cache: yarn
             - uses: sueddeutsche/gha-npm-auth@v2
               with:
                   npm-token: ${{ secrets.NPM_TOKEN }}
-            - uses: actions/setup-node@v3
-              with:
-                  node-version: "lts/*"
-                  cache: yarn
-                  registry-url: "https://registry.npmjs.org"
             - name: Install dependencies 🦄
               run: yarn install --frozen-lockfile
             - name: Bundle 📦
