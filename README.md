@@ -13,10 +13,10 @@
 
 Check if changes in a pullrequest are save to merge by running:
 
-- Lint
-- Build dist
-- Test
-- GraphQL Schema validation
+-   Lint
+-   Build dist
+-   Test
+-   GraphQL Schema validation
 
 ### Usage
 
@@ -27,10 +27,10 @@ name: Pullrequest checks
 on: pull_request
 
 jobs:
-  PR-Checks:
-    uses: sueddeutsche/gha-lux-reusable-workflows/.github/workflows/pullrequest.yaml@v1
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    PR-Checks:
+        uses: sueddeutsche/gha-lux-reusable-workflows/.github/workflows/pullrequest.yaml@v1
+        secrets:
+            NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
 ## [release](./.github/workflows/release.yaml)
@@ -42,16 +42,14 @@ Do a semantic release
 Use it in a workflow like this:
 
 ```yaml
-name: Pullrequest checks
-on: pull_request
+name: Release
+on:
+    push:
+        branches: ["main", "beta"]
 
 jobs:
-  PR-Checks:
-    uses: sueddeutsche/gha-lux-reusable-workflows/.github/workflows/pullrequest.yaml@v1
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    PR-Checks:
+        uses: sueddeutsche/gha-lux-reusable-workflows/.github/workflows/pullrequest.yaml@v1
+        secrets:
+            NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
-
-on:
-push:
-branches: ["main", "beta"]
